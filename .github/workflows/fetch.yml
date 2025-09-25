@@ -1,0 +1,45 @@
+name: Fetch file every 15m
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # chạy mỗi 15 phút (UTC)
+  workflow_dispatch:          # cho phép chạy tay
+
+permissions:
+  contents: write             # cần để push
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}  # đủ quyền push vào repo hiện tại
+
+      - name: Configure git user
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Download & commit if changed
+        env:
+          URL: ${{ secrets.DOWNLOAD }}
+          OUT: sample_game_db.sqlite   # đổi đường dẫn/ tên file tại đây
+        run: |
+          mkdir -p "$(dirname "$OUT")"
+          tmp="$(mktemp)"
+
+          # tải file (thêm header auth nếu cần)
+          curl -fsSL "$URL" -o "$tmp"
+
+          # chỉ commit khi khác nội dung hiện tại
+          if [ ! -f "$OUT" ] || ! cmp -s "$tmp" "$OUT"; then
+            mv "$tmp" "$OUT"
+            git add "$OUT"
+            git commit -m "chore(fetch): update $(basename "$OUT") at $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git push
+            echo "Updated and pushed."
+          else
+            echo "No changes."
+          fi
