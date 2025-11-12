@@ -2,7 +2,7 @@ name: Fetch file every 15m
 
 on:
   schedule:
-    - cron: "*/30 * * * *"   # chạy mỗi 14 phút (UTC)
+    - cron: "0 0 * * *"   # chạy mỗi 14 phút (UTC)
   workflow_dispatch:          # cho phép chạy tay
 
 permissions:
